@@ -22,6 +22,7 @@ CLIENT_SECRET = astra_token_dict["secret"]
 auth_provider = PlainTextAuthProvider(CLIENT_ID, CLIENT_SECRET)
 cluster = Cluster(cloud=cloud_config, auth_provider=auth_provider)
 session = cluster.connect()
+session.set_keyspace('doanbigdata')
 
 # Giao diện Streamlit
 st.title("📊 Hệ thống giám sát ô nhiễm không khí")
