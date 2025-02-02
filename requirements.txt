@@ -1,2 +1,6 @@
 streamlit
 streamlit-option-menu
+cassandra.cluster
+Cluster
+pandas
+datetime
