@@ -1,0 +1,2 @@
+env:
+  ASTRA_DB_TOKEN: ${{ secrets.ASTRA_DB_TOKEN }}
