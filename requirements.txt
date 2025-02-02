@@ -4,4 +4,3 @@ cassandra-driver
 pandas
 datetime
 numpy
-os
