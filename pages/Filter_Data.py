@@ -68,7 +68,7 @@ if selected == "CO(GT)":
         co = st.slider("Chọn khoảng giá trị CO(GT)", min_value=0.0, max_value=12.0, value=(0.0, 12.0), step=0.1)
         if st.button("Lọc dữ liệu"):
             #st.subheader(f"Du lieu co gia tri CO(GT) tu {co[0]} den {co[1]}")
-            query = f"SELECT * FROM air_quality WHERE co_gt > {co[0]} AND co_gt < {co[1]}"
+            query = f"SELECT * FROM air_quality WHERE co_gt > {co[0]} AND co_gt < {co[1]} ALLOW FILTERING"
             rows = session.execute(query)
             df = pd.DataFrame(rows)
             st.dataframe(df)
@@ -81,7 +81,7 @@ if selected == "CO(GT)":
         if st.button("Lọc dữ liệu"):
             if co >= 0:
                 #st.subheader(f"Du lieu co gia tri CO(GT) la {co}")
-                query = f"SELECT * FROM air_quality WHERE co_gt = {co}"
+                query = f"SELECT * FROM air_quality WHERE co_gt = {co} ALLOW FILTERING"
                 rows = session.execute(query)
                 df = pd.DataFrame(rows)
                 st.dataframe(df)
