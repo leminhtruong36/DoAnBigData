@@ -1,11 +1,36 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import requests
+import os
 
-# 📌 Load mô hình đã train
-model = joblib.load("rf_model.pkl")  # Đảm bảo bạn đã lưu model này
+# 📌 URL GitHub chứa model (CẬP NHẬT URL CỦA BẠN)
+MODEL_URL = "https://raw.githubusercontent.com/leminhtruong36/DoAnBigData/main/rf_model.pkl"
+MODEL_PATH = "rf_model.pkl"
 
-# 📌 Tiêu đề
+# 📌 Tải model nếu chưa có
+def download_model():
+    if not os.path.exists(MODEL_PATH):
+        st.info("🔄 Đang tải mô hình dự đoán...")
+        response = requests.get(MODEL_URL, stream=True)
+        if response.status_code == 200:
+            with open(MODEL_PATH, "wb") as f:
+                f.write(response.content)
+            st.success("✅ Model tải thành công!")
+        else:
+            st.error("⚠️ Không thể tải model từ GitHub!")
+
+# 📌 Kiểm tra và tải model
+download_model()
+
+# 📌 Load mô hình
+try:
+    model = joblib.load(MODEL_PATH)
+    st.success("🚀 Mô hình đã sẵn sàng!")
+except Exception as e:
+    st.error(f"❌ Lỗi tải model: {e}")
+
+# 📌 Tiêu đề ứng dụng
 st.title("🔍 Dự đoán chất lượng không khí")
 
 # 📌 Input từ người dùng
@@ -25,13 +50,17 @@ t = st.number_input("Nhập nhiệt độ (°C)", min_value=0.0, step=0.1)
 
 # 📌 Nút dự đoán
 if st.button("Dự đoán"):
-    # Tạo DataFrame từ input
-    input_data = pd.DataFrame([[co, no2, nox, ah, c6h6, nmhc, pt08_s1_co, pt08_s2_nmhc, pt08_s3_nox, pt08_s4_no2, pt08_s5_o3, rh, t]],
-                              columns=["co_gt", "no2_gt", "nox_gt", "ah", "c6h6_gt", "nmhc_gt", "pt08_s1_co", "pt08_s2_nmhc", "pt08_s3_nox", "pt08_s4_no2", "pt08_s5_o3", "rh", "t"])
-    
-    # Thực hiện dự đoán
-    prediction = model.predict(input_data)[0]
-    
-    # Hiển thị kết quả
-    result = "🌍 Có ô nhiễm" if prediction == 1 else "✅ Không ô nhiễm"
-    st.success(result)
+    if "model" in locals():
+        # Tạo DataFrame từ input
+        input_data = pd.DataFrame([[co, no2, nox, ah, c6h6, nmhc, pt08_s1_co, pt08_s2_nmhc, pt08_s3_nox, pt08_s4_no2, pt08_s5_o3, rh, t]],
+                                  columns=["co_gt", "no2_gt", "nox_gt", "ah", "c6h6_gt", "nmhc_gt", "pt08_s1_co", "pt08_s2_nmhc", "pt08_s3_nox", "pt08_s4_no2", "pt08_s5_o3", "rh", "t"])
+        
+        # Thực hiện dự đoán
+        prediction = model.predict(input_data)[0]
+        
+        # Hiển thị kết quả
+        result = "🌍 Có ô nhiễm" if prediction == 1 else "✅ Không ô nhiễm"
+        st.success(result)
+    else:
+        st.error("⚠️ Model chưa được tải thành công, không thể dự đoán!")
+
