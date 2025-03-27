@@ -4,5 +4,4 @@ cassandra-driver
 pandas
 datetime
 numpy
-collections
 plotly
