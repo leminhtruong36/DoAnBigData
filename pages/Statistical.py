@@ -36,7 +36,7 @@ month = st.selectbox("Chọn tháng", list(range(1, 13)), index=2)
 year = st.selectbox("Chọn năm", sorted(data["date"].dt.year.unique()), index=0)
 
 pollutant_mapping = {
-    "CO(GT)": "co",
+    "CO(GT)": "co_gt",
     "NOx(GT)": "nox_gt",
     "NO2(GT)": "no2_gt",
     "NMHC(GT)": "nmhc_gt",
