@@ -148,9 +148,12 @@ if selected == "Chỉ số ô nhiễm":
         if st.button("Lọc dữ liệu"):
             filtered_data = reduce_function_find_pollutant(mapped_data, selected_pollutant, value_range=value_range)
             df_filtered = pd.DataFrame([val for values in filtered_data.values() for val in values])
-            df_filtered["date"] = df_filtered["date"].dt.strftime("%Y-%m-%d")  # YYYY-MM-DD
-            df_filtered["time"] = pd.to_datetime(df_filtered["time"], format="%H:%M:%S.%f").dt.strftime("%H:%M:%S")  # HH:MM:SS
-            st.dataframe(df_filtered)
+            if df_filtered.empty:
+                st.warning(f"⚠️ Không có dữ liệu phù hợp với điều kiện đã chọn!")
+            else:
+                df_filtered["date"] = df_filtered["date"].dt.strftime("%Y-%m-%d")  # YYYY-MM-DD
+                df_filtered["time"] = pd.to_datetime(df_filtered["time"], format="%H:%M:%S.%f").dt.strftime("%H:%M:%S")  # HH:MM:SS
+                st.dataframe(df_filtered)
             # Xuất dữ liệu thành file CSV
             csv = df_filtered.to_csv(index=False).encode('utf-8')
             st.download_button(
