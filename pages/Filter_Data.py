@@ -27,8 +27,8 @@ session = cluster.connect()
 session.set_keyspace('final')
 
 rows = session.execute("SELECT * FROM air_quality")
-data = pd.DataFrame(rows, columns=["date", "time", "co", "pt08_s1_co", "nmhc_gt", "c6h6_gt", "pt08_s2_nmhc", 
-                                   "nox_gt", "pt08_s3_nox", "no2_gt", "pt08_s4_no2", "pt08_s5_o3", "t", "rh", "ah"])
+data = pd.DataFrame(rows, columns=["date", "time", "ah", "c6h6_gt", "co_gt", "nmhc_gt", "no2_gt", 
+                                   "nox_gt", "pt08_s1_co", "pt08_s2_nmhc", "pt08_s3_nox", "pt08_s4_no2", "pt08_s5_o3", "rh", "t"])
 
 data["date"] = data["date"].apply(lambda x: x.date() if isinstance(x, cassandra.util.Date) else x)
 
