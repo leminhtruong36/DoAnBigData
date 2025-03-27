@@ -4,8 +4,10 @@ from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
 import pandas as pd
 import json
-import os
 import datetime
+import cassandra.util
+from collections import defaultdict
+import plotly.express as px
 
 cloud_config= {
   'secure_connect_bundle': 'secure-connect-doanbigdata.zip'
@@ -22,70 +24,168 @@ CLIENT_SECRET = astra_token_dict["secret"]
 auth_provider = PlainTextAuthProvider(CLIENT_ID, CLIENT_SECRET)
 cluster = Cluster(cloud=cloud_config, auth_provider=auth_provider)
 session = cluster.connect()
-session.set_keyspace('doanbigdata')
+session.set_keyspace('final')
 
-# Giao diện Streamlit
-st.title("📊 Hệ thống giám sát ô nhiễm không khí")
-st.write("Dữ liệu được lấy từ bảng air_quality trong Cassandra")
+rows = session.execute("SELECT * FROM air_quality")
+data = pd.DataFrame(rows, columns=["date", "time", "co", "pt08_s1_co", "nmhc_gt", "c6h6_gt", "pt08_s2_nmhc", 
+                                   "nox_gt", "pt08_s3_nox", "no2_gt", "pt08_s4_no2", "pt08_s5_o3", "t", "rh", "ah"])
+
+data["date"] = data["date"].apply(lambda x: x.date() if isinstance(x, cassandra.util.Date) else x)
+
+data["date"] = pd.to_datetime(data["date"])
 
 with st.sidebar:
     selected = option_menu(
         menu_title="Filter Data",
-        options=["Date", "CO(GT)", "NOx(GT)", "NO2(GT)", "PT08.S1(CO)", "PT08.S2(NMHC)", "PT08.S3(NOx)", "PT08.S4(NO2)", "PT08.S5(O3)", "T", "RH", "AH"],
+        options=["Date", "Chỉ số ô nhiễm"],
         default_index=0,
         orientation="vertical",
     )
+
+def map_function_(data):
+    mapped_data = []
+    for _, row in data.iterrows():
+        key = (row["date"], row["time"])
+        value = row.to_dict()
+        mapped_data.append((key, value))
+    return mapped_data
+
+def reduce_function_find_date(mapped_data, start_date, end_date):
+    reduced_data = defaultdict(list)
+    start_date = pd.Timestamp(start_date)
+    end_date = pd.Timestamp(end_date)
+    for key, value in mapped_data:
+        if start_date <= key[0] <= end_date:
+            reduced_data[key].append(value)
+    return reduced_data
+
+# def reduce_function_find_cogt(mapped_data, co_range=None, co_value=None):
+#     reduced_data = defaultdict(list)
+    
+#     for key, value in mapped_data:
+#         if co_range:
+#             if co_range[0] <= value["co"] <= co_range[1]:
+#                 reduced_data[key].append(value)
+#         elif co_value is not None:
+#             if value["co"] == co_value:
+#                 reduced_data[key].append(value)
+    
+#     return reduced_data
+
+def reduce_function_find_pollutant(mapped_data, pollutant, value_range=None, value_fixed=None):
+    reduced_data = defaultdict(list)
+    pollutant_mapping = {
+        "CO(GT)": "co",
+        "NOx(GT)": "nox_gt",
+        "NO2(GT)": "no2_gt",
+        "NMHC(GT)": "nmhc_gt",
+        "C6H6(GT)": "c6h6_gt",
+        "T": "t",
+        "RH": "rh",
+        "AH": "ah"
+}
+    if pollutant not in pollutant_mapping:
+        print(f"⚠️ Không tìm thấy chỉ số {pollutant} trong danh sách!")
+        return reduced_data
+    
+    pollutant_key = pollutant_mapping[pollutant]
+
+    for key, value in mapped_data:
+        if pollutant_key not in value:
+            continue
+
+        try:
+            pollutant_value = float(value[pollutant_key])
+        except ValueError:
+            print(f"⚠️ Không thể chuyển đổi {value[pollutant_key]} thành số!")
+            continue
+
+        if value_range is not None:
+            if value_range[0] <= pollutant_value <= value_range[1]:
+                reduced_data[key].append(value)
+
+        elif value_fixed is not None:
+            if pollutant_value == value_fixed:
+                reduced_data[key].append(value)
+
+    return reduced_data
+
+mapped_data = map_function_(data)
+
 if selected == "Date":
-    st.subheader("Lọc dữ liệu theo ngày")
+    st.header("🔍 Tìm kiếm dữ liệu theo ngày")
+    st.write("Dữ liệu được lấy từ bảng air_quality trong Cassandra")
     start_date = st.date_input("Chọn ngày bắt đầu", datetime.date(2004, 3, 10), min_value=datetime.date(2004, 3, 10), max_value=datetime.date(2005, 4, 4))
     end_date = st.date_input("Chọn ngày kết thúc", datetime.date(2004, 3, 10), min_value=datetime.date(2004, 3, 10), max_value=datetime.date(2005, 4, 4))
-    if st.button("Lọc dữ liệu"):
-        # Kiểm tra điều kiện lọc
-        if start_date > end_date:
-            st.error("Ngày bắt đầu không thể lớn hơn ngày kết thúc")
-        if start_date <= end_date:
-            #st.subheader(f"Du lieu tu ngay {start_date} den ngay {end_date}")
-            query = f"SELECT * FROM air_quality WHERE date >= '{start_date}' AND date <= '{end_date}' ALLOW FILTERING"
-            # Thực thi truy vấn
-            rows = session.execute(query)
-            df = pd.DataFrame(rows)
-            # Hiển thị dữ liệu
-            st.dataframe(df)
-        else:
-            st.error("Ngày bắt đầu không thể lớn hơn ngày kết thúc")
+
+    reduced_data = reduce_function_find_date(mapped_data, start_date, end_date)
+
+    filtered_data = pd.DataFrame([value for values in reduced_data.values() for value in values])
+
+    filtered_data["date"] = filtered_data["date"].dt.strftime("%Y-%m-%d")  # YYYY-MM-DD
+    filtered_data["time"] = pd.to_datetime(filtered_data["time"], format="%H:%M:%S.%f").dt.strftime("%H:%M:%S")  # HH:MM:SS
+
+    st.write(f"Dữ liệu từ {start_date} đến {end_date}:")
+    st.dataframe(filtered_data)
     if st.button("Reset", type="primary"):
         pass
 
-if selected == "CO(GT)":
-    selected = option_menu(
-        menu_title=None,
-        options=["Khoảng giá trị", "Giá trị cố định"],
-        default_index=0,
-        orientation="horizontal",
-    )
-    if selected == "Khoảng giá trị":
-        st.subheader("Lọc dữ liệu theo khoảng giá trị CO(GT)")
-        co = st.slider("Chọn khoảng giá trị CO(GT)", min_value=0.0, max_value=12.0, value=(0.0, 12.0), step=0.1)
+if selected == "Chỉ số ô nhiễm":
+    pollutants = ["CO(GT)", "NOx(GT)", "NO2(GT)", "T", "RH", "AH"]
+    st.title("🔍 Tìm kiếm dữ liệu ô nhiễm không khí")
+    st.write("Dữ liệu được lấy từ bảng air_quality trong Cassandra")
+    selected_pollutant = st.selectbox("Chọn chỉ số ô nhiễm", pollutants)
+
+    selected_filter = st.radio("Chọn kiểu lọc", ["Khoảng giá trị", "Giá trị cố định"])
+
+    if selected_filter == "Khoảng giá trị":
+        st.subheader(f"Lọc dữ liệu theo khoảng giá trị {selected_pollutant.upper()}")
+        value_range = st.slider(
+            f"Chọn khoảng giá trị {selected_pollutant.upper()}",
+            min_value=0.0, max_value=12.0, value=(0.0, 12.0), step=0.1
+        )
+        
         if st.button("Lọc dữ liệu"):
-            #st.subheader(f"Du lieu co gia tri CO(GT) tu {co[0]} den {co[1]}")
-            query = f"SELECT * FROM air_quality WHERE co_gt > {co[0]} AND co_gt < {co[1]} ALLOW FILTERING"
-            rows = session.execute(query)
-            df = pd.DataFrame(rows)
-            st.dataframe(df)
+            filtered_data = reduce_function_find_pollutant(mapped_data, selected_pollutant, value_range=value_range)
+            df_filtered = pd.DataFrame([val for values in filtered_data.values() for val in values])
+            df_filtered["date"] = df_filtered["date"].dt.strftime("%Y-%m-%d")  # YYYY-MM-DD
+            df_filtered["time"] = pd.to_datetime(df_filtered["time"], format="%H:%M:%S.%f").dt.strftime("%H:%M:%S")  # HH:MM:SS
+            st.dataframe(df_filtered)
+            # Xuất dữ liệu thành file CSV
+            csv = df_filtered.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Tải xuống CSV",
+                data=csv,
+                file_name="filtered_data.csv",
+                    mime="text/csv",
+                )
         if st.button("Reset", type="primary"):
             pass
-    if selected == "Giá trị cố định":
-        st.subheader("Lọc dữ liệu theo giá trị CO(GT)")
-        co = st.text_input("Chọn giá trị CO(GT)", value="0.1")
-        co = float(co)
-        if st.button("Lọc dữ liệu"):
-            if co >= 0:
-                #st.subheader(f"Du lieu co gia tri CO(GT) la {co}")
-                query = f"SELECT * FROM air_quality WHERE co_gt = {co} ALLOW FILTERING"
-                rows = session.execute(query)
-                df = pd.DataFrame(rows)
-                st.dataframe(df)
-            else:
-                st.error("Giá trị CO không thể bé hơn 0")
-        if st.button("Reset", type="primary"):
-            pass
+
+    elif selected_filter == "Giá trị cố định":
+        st.subheader(f"Lọc dữ liệu theo giá trị cố định {selected_pollutant.upper()}")
+        value_fixed = st.text_input(f"Nhập giá trị {selected_pollutant.upper()}", value="0.1")
+        
+        try:
+            value_fixed = float(value_fixed)
+            if st.button("Lọc dữ liệu"):
+                filtered_data = reduce_function_find_pollutant(mapped_data, selected_pollutant, value_fixed=value_fixed)
+                df_filtered = pd.DataFrame([val for values in filtered_data.values() for val in values])
+                if df_filtered.empty:
+                    st.warning(f"⚠️ Không có dữ liệu phù hợp với giá trị {value_fixed} của {selected_pollutant.upper()}!")
+                else:
+                    df_filtered["date"] = df_filtered["date"].dt.strftime("%Y-%m-%d")  # YYYY-MM-DD
+                    df_filtered["time"] = pd.to_datetime(df_filtered["time"], format="%H:%M:%S.%f").dt.strftime("%H:%M:%S")  # HH:MM:SS
+                    st.dataframe(df_filtered)
+                    # Xuất dữ liệu thành file CSV
+                    csv = df_filtered.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="📥 Tải xuống CSV",
+                        data=csv,
+                        file_name="filtered_data.csv",
+                            mime="text/csv",
+                        )
+            if st.button("Reset", type="primary"):
+                pass
+        except ValueError:
+            st.error("⚠️ Vui lòng nhập một số hợp lệ!")
