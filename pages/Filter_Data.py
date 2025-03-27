@@ -183,7 +183,7 @@ if selected == "Chỉ số ô nhiễm":
 
     elif selected_filter == "Giá trị cố định":
         st.subheader(f"Lọc dữ liệu theo giá trị cố định {selected_pollutant.upper()}")
-        value_fixed = st.text_input(f"Nhập giá trị {selected_pollutant}", step=0.1)
+        value_fixed = st.text_input(f"Nhập giá trị {selected_pollutant}")
         
         try:
             value_fixed = float(value_fixed)
