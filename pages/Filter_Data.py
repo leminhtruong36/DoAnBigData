@@ -91,12 +91,16 @@ def reduce_function_find_pollutant(mapped_data, pollutant, value_range=None, val
     
     pollutant_key = pollutant_mapping[pollutant]
 
+    # Xác định sai số chấp nhận được khi so sánh
+    EPSILON = 1e-5  # Sai số nhỏ để tránh lỗi dấu phẩy động
+
     for key, value in mapped_data:
         if pollutant_key not in value:
             continue
 
         try:
             pollutant_value = float(value[pollutant_key])
+            pollutant_value = round(pollutant_value, 2)  # 🔹 Làm tròn dữ liệu về 5 chữ số thập phân
         except ValueError:
             print(f"⚠️ Không thể chuyển đổi {value[pollutant_key]} thành số!")
             continue
@@ -106,9 +110,10 @@ def reduce_function_find_pollutant(mapped_data, pollutant, value_range=None, val
             if value_range[0] <= pollutant_value <= value_range[1]:
                 reduced_data[key].append(value)
 
-        # Lọc theo giá trị cố định
-        elif value_fixed is not None and isinstance(value_fixed, (int, float)):
-            if pollutant_value == value_fixed:
+        # Lọc theo giá trị cố định với sai số nhỏ
+        elif value_fixed is not None:
+            value_fixed = round(float(value_fixed), 2)  # 🔹 Làm tròn giá trị nhập vào để so sánh chính xác hơn
+            if abs(pollutant_value - value_fixed) < EPSILON:
                 reduced_data[key].append(value)
 
     return reduced_data
@@ -183,10 +188,11 @@ if selected == "Chỉ số ô nhiễm":
 
     elif selected_filter == "Giá trị cố định":
         st.subheader(f"Lọc dữ liệu theo giá trị cố định {selected_pollutant.upper()}")
-        value_fixed = st.text_input(f"Nhập giá trị {selected_pollutant}", min_val)
+        value_fixed = st.number_input(f"Nhập giá trị {selected_pollutant.upper()}", min_value=min_val, max_value=max_val, step=0.1)
         
         try:
-            value_fixed = float(value_fixed)
+            # value_fixed = float(value_fixed)
+            value_fixed = round(value_fixed, 1)
             if st.button("Lọc dữ liệu"):
                 filtered_data = reduce_function_find_pollutant(mapped_data, selected_pollutant, value_fixed=value_fixed)
                 df_filtered = pd.DataFrame([val for values in filtered_data.values() for val in values])
