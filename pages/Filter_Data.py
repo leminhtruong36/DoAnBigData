@@ -125,15 +125,9 @@ if selected == "Date":
     st.write("Dữ liệu được lấy từ bảng air_quality trong Cassandra")
     col1, col2 = st.columns(2)
     with col1:
-        start_date = st.date_input("📅 Ngày bắt đầu", 
-                                datetime.date(2004, 3, 10), 
-                                min_value=datetime.date(2004, 3, 10), 
-                                max_value=datetime.date(2005, 4, 4))
+        start_date = st.date_input("📅 Ngày bắt đầu", datetime.date(2004, 3, 10), min_value=datetime.date(2004, 3, 10), max_value=datetime.date(2005, 4, 4))
     with col2:
-        end_date = st.date_input("📅 Ngày kết thúc", 
-                                datetime.date(2004, 3, 10), 
-                                min_value=datetime.date(2004, 3, 10), 
-                                max_value=datetime.date(2005, 4, 4))
+        end_date = st.date_input("📅 Ngày kết thúc", datetime.date(2004, 3, 10), min_value=datetime.date(2004, 3, 10), max_value=datetime.date(2005, 4, 4))
         
     reduced_data = reduce_function_find_date(mapped_data, start_date, end_date)
 
@@ -151,9 +145,11 @@ if selected == "Chỉ số ô nhiễm":
     pollutants = ["CO(GT)", "NOx(GT)", "NO2(GT)", "T", "RH", "AH"]
     st.title("🔍 Tìm kiếm dữ liệu ô nhiễm không khí")
     st.write("Dữ liệu được lấy từ bảng air_quality trong Cassandra")
-    selected_pollutant = st.selectbox("Chọn chỉ số ô nhiễm", pollutants)
-
-    selected_filter = st.radio("Chọn kiểu lọc", ["Khoảng giá trị", "Giá trị cố định"])
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_pollutant = st.selectbox("Chọn chỉ số ô nhiễm", pollutants)
+    with col2:
+        selected_filter = st.radio("Chọn kiểu lọc", ["Khoảng giá trị", "Giá trị cố định"])
 
     # Lấy khoảng giá trị cho chỉ số được chọn
     pollutant_ranges = {
