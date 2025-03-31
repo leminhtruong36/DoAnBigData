@@ -45,20 +45,29 @@ with st.sidebar:
 def map_function_(data):
     mapped_data = []
     for _, row in data.iterrows():
-        key = (row["date"], row["time"])
-        value = {k: v for k, v in row.items() if k not in ["date", "time"]}
-        mapped_data.append((key, value))
+        try:
+            date_value = pd.to_datetime(row["date"], errors="coerce")  # Đảm bảo 'date' là datetime
+            time_value = row["time"]
+            key = (date_value, time_value)
+            value = {k: v for k, v in row.items() if k not in ["date", "time"]}
+            mapped_data.append((key, value))
+        except Exception as e:
+            print(f"⚠️ Lỗi khi xử lý hàng dữ liệu: {e}")
     return mapped_data
 
-def reduce_function_find_date(mapped_data, start_date, end_date):
-    reduced_data = {}
-    start_date = pd.Timestamp(start_date)
-    end_date = pd.Timestamp(end_date)
-    for key, value in mapped_data:
-        date_key = pd.Timestamp(key[0])  # Chuyển về Timestamp nếu cần
-        if start_date <= date_key <= end_date:
-            reduced_data[key] = value  # Tránh lồng danh sách không cần thiết
 
+def reduce_function_find_date(mapped_data, start_date, end_date):
+    reduced_data = defaultdict(list)
+    
+    # Chuyển đổi start_date và end_date sang Timestamp nếu cần
+    start_date = pd.to_datetime(start_date, errors="coerce")
+    end_date = pd.to_datetime(end_date, errors="coerce")
+    
+    for key, value in mapped_data:
+        date_value = key[0]  # key[0] chính là cột date
+        if isinstance(date_value, pd.Timestamp) and start_date <= date_value <= end_date:
+            reduced_data[key].append(value)
+    
     return reduced_data
 
 # def reduce_function_find_cogt(mapped_data, co_range=None, co_value=None):
@@ -92,9 +101,7 @@ def reduce_function_find_pollutant(mapped_data, pollutant, value_range=None, val
         return reduced_data
     
     pollutant_key = pollutant_mapping[pollutant]
-
-    # Xác định sai số chấp nhận được khi so sánh
-    EPSILON = 0.01 # Sai số nhỏ để tránh lỗi dấu phẩy động
+    EPSILON = 1e-5  # Sai số nhỏ để tránh lỗi dấu phẩy động
 
     for key, value in mapped_data:
         if pollutant_key not in value:
@@ -102,19 +109,17 @@ def reduce_function_find_pollutant(mapped_data, pollutant, value_range=None, val
 
         try:
             pollutant_value = float(value[pollutant_key])
-            pollutant_value = round(pollutant_value, 2)  # 🔹 Làm tròn dữ liệu về 5 chữ số thập phân
+            pollutant_value = round(pollutant_value, 2)  # Làm tròn để tránh lỗi dấu phẩy động
         except ValueError:
             print(f"⚠️ Không thể chuyển đổi {value[pollutant_key]} thành số!")
             continue
 
-        # Lọc theo khoảng giá trị
         if value_range is not None and isinstance(value_range, (tuple, list)) and len(value_range) == 2:
             if value_range[0] <= pollutant_value <= value_range[1]:
                 reduced_data[key].append(value)
 
-        # Lọc theo giá trị cố định với sai số nhỏ
         elif value_fixed is not None:
-            value_fixed = round(float(value_fixed), 2)  # 🔹 Làm tròn giá trị nhập vào để so sánh chính xác hơn
+            value_fixed = round(float(value_fixed), 2)
             if abs(pollutant_value - value_fixed) < EPSILON:
                 reduced_data[key].append(value)
 
