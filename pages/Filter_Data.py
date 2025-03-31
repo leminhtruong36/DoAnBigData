@@ -123,9 +123,18 @@ mapped_data = map_function_(data)
 if selected == "Date":
     st.header("🔍 Tìm kiếm dữ liệu theo ngày")
     st.write("Dữ liệu được lấy từ bảng air_quality trong Cassandra")
-    start_date = st.date_input("Chọn ngày bắt đầu", datetime.date(2004, 3, 10), min_value=datetime.date(2004, 3, 10), max_value=datetime.date(2005, 4, 4))
-    end_date = st.date_input("Chọn ngày kết thúc", datetime.date(2004, 3, 10), min_value=datetime.date(2004, 3, 10), max_value=datetime.date(2005, 4, 4))
-
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("📅 Ngày bắt đầu", 
+                                datetime.date(2004, 3, 10), 
+                                min_value=datetime.date(2004, 3, 10), 
+                                max_value=datetime.date(2005, 4, 4))
+    with col2:
+        end_date = st.date_input("📅 Ngày kết thúc", 
+                                datetime.date(2004, 3, 10), 
+                                min_value=datetime.date(2004, 3, 10), 
+                                max_value=datetime.date(2005, 4, 4))
+        
     reduced_data = reduce_function_find_date(mapped_data, start_date, end_date)
 
     filtered_data = pd.DataFrame([value for values in reduced_data.values() for value in values])
