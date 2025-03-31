@@ -42,10 +42,10 @@ try:
     metrics = response.json()
 
     st.write("### 🔥 Đánh giá mô hình")
-    st.metric("🎯 Accuracy", f"{metrics['accuracy']:.4f}")
-    st.metric("🎯 Precision", f"{metrics['precision']:.4f}")
-    st.metric("🎯 Recall", f"{metrics['recall']:.4f}")
-    st.metric("🎯 F1-score", f"{metrics['f1_score']:.4f}")
+    st.metric("🎯 Accuracy", f"{metrics['accuracy']:.1f}")
+    st.metric("🎯 Precision", f"{metrics['precision']:.1f}")
+    st.metric("🎯 Recall", f"{metrics['recall']:.1f}")
+    st.metric("🎯 F1-score", f"{metrics['f1_score']:.1f}")
 except Exception as e:
     st.error(f"⚠️ Không thể tải file metrics: {e}")
 
