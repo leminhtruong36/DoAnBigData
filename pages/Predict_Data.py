@@ -5,8 +5,12 @@ import requests
 import os
 
 # 📌 URL GitHub chứa model (CẬP NHẬT URL CỦA BẠN)
-MODEL_URL = "https://raw.githubusercontent.com/leminhtruong36/DoAnBigData/main/rf_model.pkl"
-MODEL_PATH = "rf_model.pkl"
+GITHUB_BASE_URL = "https://raw.githubusercontent.com/leminhtruong36/DoAnBigData/main/"
+MODEL_PATH = GITHUB_BASE_URL + "rf_model.pkl"
+MODEL_URL = "rf_model.pkl"
+METRICS_URL = GITHUB_BASE_URL + "rf_metrics.json"
+TEST_SAMPLES_URL = GITHUB_BASE_URL + "test_samples.json"
+TEST_RESULTS_URL = GITHUB_BASE_URL + "test_results.csv"
 
 # 📌 Tải model nếu chưa có
 def download_model():
@@ -29,6 +33,48 @@ try:
     st.success("🚀 Mô hình đã sẵn sàng!")
 except Exception as e:
     st.error(f"❌ Lỗi tải model: {e}")
+
+st.title("📊 Kết quả huấn luyện mô hình Random Forest")
+# 📌 Tải và hiển thị metrics
+try:
+    response = requests.get(METRICS_URL)
+    response.raise_for_status()
+    metrics = response.json()
+
+    st.write("### 🔥 Đánh giá mô hình")
+    st.metric("🎯 Accuracy", f"{metrics['accuracy']:.4f}")
+    st.metric("🎯 Precision", f"{metrics['precision']:.4f}")
+    st.metric("🎯 Recall", f"{metrics['recall']:.4f}")
+    st.metric("🎯 F1-score", f"{metrics['f1_score']:.4f}")
+except Exception as e:
+    st.error(f"⚠️ Không thể tải file metrics: {e}")
+
+# 📌 Hiển thị một số mẫu test
+st.write("### 📌 Một số bản ghi từ tập test")
+try:
+    response = requests.get(TEST_SAMPLES_URL)
+    response.raise_for_status()
+    test_samples = response.json()
+    df_samples = pd.DataFrame(test_samples)
+    st.dataframe(df_samples)
+except Exception as e:
+    st.error(f"⚠️ Không thể tải file test_samples: {e}")
+
+# 📌 Cho phép người dùng tải toàn bộ tập test
+st.write("### 📥 Tải toàn bộ kết quả test")
+try:
+    response = requests.get(TEST_RESULTS_URL)
+    response.raise_for_status()
+    st.download_button(
+        label="📥 Tải toàn bộ kết quả test",
+        data=response.content,
+        file_name="test_results.csv",
+        mime="text/csv"
+    )
+except Exception as e:
+    st.error(f"⚠️ Không thể tải file test_results: {e}")
+
+
 
 # 📌 Tiêu đề ứng dụng
 st.title("🔍 Dự đoán chất lượng không khí")
