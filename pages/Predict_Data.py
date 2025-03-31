@@ -62,8 +62,6 @@ try:
 except Exception as e:
     st.error(f"⚠️ Không thể tải file test_samples: {e}")
 
-# Cho phép người dùng tải toàn bộ tập test
-st.write("### 📥 Tải toàn bộ kết quả test")
 try:
     response = requests.get(TEST_RESULTS_URL)
     response.raise_for_status()
@@ -80,11 +78,13 @@ except Exception as e:
 
 # Tiêu đề ứng dụng
 st.title("🔍 Dự đoán chất lượng không khí")
-
-# Input từ người dùng (Chỉ nhập CO, NO₂, NOx)
-co = st.number_input("Nhập nồng độ CO (mg/m³)", min_value=0.0, step=0.1)
-no2 = st.number_input("Nhập nồng độ NO₂ (ppb)", min_value=0.0, step=0.1)
-nox = st.number_input("Nhập nồng độ NOx (ppb)", min_value=0.0, step=0.1)
+col1, col2, col3 = st.columns(3)
+with col1:
+    co = st.number_input("Nhập nồng độ CO (mg/m³)", min_value=0.0, step=0.1)
+with col2:
+    no2 = st.number_input("Nhập nồng độ NO₂ (ppb)", min_value=0.0, step=0.1)
+with col3:
+    nox = st.number_input("Nhập nồng độ NOx (ppb)", min_value=0.0, step=0.1)
 
 # Các giá trị khác mặc định là 0.0 (Ẩn đi)
 default_values = {
