@@ -42,10 +42,12 @@ try:
     metrics = response.json()
 
     st.write("### 🔥 Đánh giá mô hình")
-    st.metric("🎯 Accuracy", f"{metrics['accuracy']:.1f} | 🎯 Precision", f"{metrics['precision']:.1f} | 🎯 Recall", f"{metrics['recall']:.1f} | 🎯 F1-score", f"{metrics['f1_score']:.1f}")
-    # st.metric("🎯 Precision", f"{metrics['precision']:.1f}")
-    # st.metric("🎯 Recall", f"{metrics['recall']:.1f}")
-    # st.metric("🎯 F1-score", f"{metrics['f1_score']:.1f}")
+    col1, col2, col3, col4 = st.columns(4)  # Chia layout thành 4 cột
+
+    col1.metric("🎯 Accuracy", f"{metrics['accuracy']:.2f}")
+    col2.metric("🎯 Precision", f"{metrics['precision']:.2f}")
+    col3.metric("🎯 Recall", f"{metrics['recall']:.2f}")
+    col4.metric("🎯 F1-score", f"{metrics['f1_score']:.2f}")
 except Exception as e:
     st.error(f"⚠️ Không thể tải file metrics: {e}")
 
