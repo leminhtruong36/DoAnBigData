@@ -30,6 +30,29 @@ data = pd.DataFrame(rows, columns=["date", "time", "ah", "c6h6_gt", "co_gt", "nm
 data["date"] = data["date"].apply(lambda x: x.date() if isinstance(x, cassandra.util.Date) else x)
 data["date"] = pd.to_datetime(data["date"])
 
+def map_function_(data):
+    mapped_data = []
+    for _, row in data.iterrows():
+        try:
+            date_value = pd.to_datetime(row["date"], errors="coerce")
+            time_value = row["time"]
+            key = (date_value, time_value)
+            value = row.to_dict()
+            mapped_data.append((key, value))
+        except Exception as e:
+            print(f"⚠️ Lỗi khi xử lý hàng dữ liệu: {e}")
+    return mapped_data
+def reduce_function_find_date(mapped_data, month, year, actual_column):
+    reduced_data = []
+    for key, value in mapped_data:
+        date_value = key[0]
+        if date_value.month == month and date_value.year == year:
+            reduced_data.append({"date": date_value, actual_column: value[actual_column]})
+    if not reduced_data:
+        return None
+    reduced_df = pd.DataFrame(reduced_data)
+    daily_avg_df = reduced_df.groupby("date")[actual_column].mean().reset_index()
+    return daily_avg_df
 st.title("📊 Biểu đồ chỉ số ô nhiễm theo tháng")
 
 pollutant_mapping = {
@@ -54,13 +77,13 @@ with col3:
 if st.button("📊 Hiển thị biểu đồ"):
     actual_column = pollutant_mapping[selected_pollutant]
 
-    filtered_data = data[(data["date"].dt.month == month) & (data["date"].dt.year == year)]
+    mapped_data = map_function_(data)
 
-    if filtered_data.empty:
+    daily_avg = reduce_function_find_date(mapped_data, month, year, actual_column)
+
+    if daily_avg is None or daily_avg.empty:
         st.warning("⚠️ Không có dữ liệu cho tháng này.")
     else:
-        daily_avg = filtered_data.groupby("date")[actual_column].mean().reset_index()
-
         fig = px.line(
             daily_avg, 
             x="date", 
