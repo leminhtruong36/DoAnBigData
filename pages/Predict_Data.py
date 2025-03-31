@@ -6,7 +6,7 @@ import os
 
 # 📌 URL GitHub chứa model (CẬP NHẬT URL CỦA BẠN)
 GITHUB_BASE_URL = "https://raw.githubusercontent.com/leminhtruong36/DoAnBigData/main/"
-MODEL_PATH = GITHUB_BASE_URL + "rf_model.pkl"
+MODEL_PATH ="https://raw.githubusercontent.com/leminhtruong36/DoAnBigData/main/rf_model.pkl"
 MODEL_URL = "rf_model.pkl"
 METRICS_URL = GITHUB_BASE_URL + "rf_metrics.json"
 TEST_SAMPLES_URL = GITHUB_BASE_URL + "test_samples.json"
