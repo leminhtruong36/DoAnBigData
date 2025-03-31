@@ -51,12 +51,14 @@ def map_function_(data):
     return mapped_data
 
 def reduce_function_find_date(mapped_data, start_date, end_date):
-    reduced_data = defaultdict(list)
+    reduced_data = {}
     start_date = pd.Timestamp(start_date)
     end_date = pd.Timestamp(end_date)
     for key, value in mapped_data:
-        if start_date <= key[0] <= end_date:
-            reduced_data[key].append(value)
+        date_key = pd.Timestamp(key[0])  # Chuyển về Timestamp nếu cần
+        if start_date <= date_key <= end_date:
+            reduced_data[key] = value  # Tránh lồng danh sách không cần thiết
+
     return reduced_data
 
 # def reduce_function_find_cogt(mapped_data, co_range=None, co_value=None):
@@ -92,7 +94,7 @@ def reduce_function_find_pollutant(mapped_data, pollutant, value_range=None, val
     pollutant_key = pollutant_mapping[pollutant]
 
     # Xác định sai số chấp nhận được khi so sánh
-    EPSILON = 1e-5  # Sai số nhỏ để tránh lỗi dấu phẩy động
+    EPSILON = 0.01 # Sai số nhỏ để tránh lỗi dấu phẩy động
 
     for key, value in mapped_data:
         if pollutant_key not in value:
