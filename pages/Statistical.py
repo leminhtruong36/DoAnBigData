@@ -32,9 +32,6 @@ data["date"] = pd.to_datetime(data["date"])
 
 st.title("📊 Biểu đồ chỉ số ô nhiễm theo tháng")
 
-month = st.selectbox("Chọn tháng", list(range(1, 13)), index=2)
-year = st.selectbox("Chọn năm", sorted(data["date"].dt.year.unique()), index=0)
-
 pollutant_mapping = {
     "CO(GT)": "co_gt",
     "NOx(GT)": "nox_gt",
@@ -46,7 +43,13 @@ pollutant_mapping = {
     "AH": "ah"
 }
 
-selected_pollutant = st.selectbox("Chọn chỉ số ô nhiễm", list(pollutant_mapping.keys()))
+col1, col2, col3 = st.columns(3)
+with col1:
+    month = st.selectbox("Chọn tháng", list(range(1, 13)), index=2)
+with col2:
+    year = st.selectbox("Chọn năm", sorted(data["date"].dt.year.unique()), index=0)
+with col3:
+    selected_pollutant = st.selectbox("Chọn chỉ số ô nhiễm", list(pollutant_mapping.keys()))
 
 if st.button("📊 Hiển thị biểu đồ"):
     actual_column = pollutant_mapping[selected_pollutant]
