@@ -46,7 +46,7 @@ def map_function_(data):
     mapped_data = []
     for _, row in data.iterrows():
         key = (row["date"], row["time"])
-        value = row.to_dict()
+        value = {k: v for k, v in row.items() if k not in ["date", "time"]}
         mapped_data.append((key, value))
     return mapped_data
 
