@@ -49,7 +49,7 @@ def map_function_(data):
             date_value = pd.to_datetime(row["date"], errors="coerce")  # Đảm bảo 'date' là datetime
             time_value = row["time"]
             key = (date_value, time_value)
-            value = {k: v for k, v in row.items() if k not in ["date", "time"]}
+            value = row.to_dict()
             mapped_data.append((key, value))
         except Exception as e:
             print(f"⚠️ Lỗi khi xử lý hàng dữ liệu: {e}")
