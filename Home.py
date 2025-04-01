@@ -1,5 +1,4 @@
 import streamlit as st
-import cassandra.util
 from streamlit_option_menu import option_menu
 from cassandra.cluster import Cluster
 from cassandra.auth import PlainTextAuthProvider
@@ -7,6 +6,8 @@ import pandas as pd
 import json
 import os
 import datetime
+from collections import defaultdict
+import cassandra.util
 
 cloud_config= {
   'secure_connect_bundle': 'secure-connect-doanbigdata.zip'
